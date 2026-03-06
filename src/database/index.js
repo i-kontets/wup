@@ -3,17 +3,14 @@ import * as SQLite from 'expo-sqlite';
 const db = SQLite.openDatabaseSync('alarm.db');
 
 export const initDatabase = () => {
-  // アラームテーブル: is_recurring (1: リピート, 0: 1回のみ) を追加
   db.execSync(
     'CREATE TABLE IF NOT EXISTS alarms (id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT, is_recurring INTEGER);'
   );
 
-  // 解除コードテーブル
   db.execSync(
     'CREATE TABLE IF NOT EXISTS unlock_codes (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT);'
   );
 
-  // 初期解除コードの投入（空の場合のみ）
   const existingCodes = db.getAllSync('SELECT * FROM unlock_codes;');
   if (existingCodes.length === 0) {
     const initialCodes = [
@@ -34,12 +31,10 @@ export const initDatabase = () => {
   }
 };
 
-// アラーム全取得
 export const getAlarms = () => {
   return db.getAllSync('SELECT * FROM alarms;');
 };
 
-// アラーム追加 (isRecurring: boolean)
 export const addAlarm = (time, isRecurring) => {
   db.runSync(
     'INSERT INTO alarms (time, is_recurring) VALUES (?, ?);', 
@@ -47,12 +42,10 @@ export const addAlarm = (time, isRecurring) => {
   );
 };
 
-// アラーム削除
 export const deleteAlarm = (id) => {
   db.runSync('DELETE FROM alarms WHERE id = ?;', [id]);
 };
 
-// 解除コード全取得
 export const getUnlockCodes = () => {
   return db.getAllSync('SELECT * FROM unlock_codes;');
 };

@@ -5,21 +5,18 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-// ★ expo-audio から最新の関数をインポート
 import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 
-// データベース関連のインポート
 import { initDatabase, getAlarms, addAlarm, deleteAlarm, getUnlockCodes } from './src/database';
 
 const { width } = Dimensions.get('window');
 
-// 音源ファイルの指定
+// 音源ファイルを指定
 const alarmSoundSource = require('./assets/sounds/alarm_loop.mp3');
 const penaltySoundSource = require('./assets/sounds/penalty.mp3');
 
 export default function App() {
-  // --- ステート管理 ---
   const [currentPage, setCurrentPage] = useState('list');
   const [alarms, setAlarms] = useState([]);
   const [tempTime, setTempTime] = useState(new Date());
@@ -30,36 +27,30 @@ export default function App() {
   const [countdown, setCountdown] = useState(20);
   const [now, setNow] = useState(new Date());
 
-  // --- アニメーション・参照系 ---
   const lastFiredTime = useRef("");
   const flashAnim = useRef(new Animated.Value(0)).current;
   const zoomAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const hapticTimerRef = useRef(null);
 
-  // --- オーディオプレイヤー ---
   const alarmPlayer = useAudioPlayer(alarmSoundSource);
   const penaltyPlayer = useAudioPlayer(penaltySoundSource);
 
-  // --- 初期化 ---
   useEffect(() => {
     initDatabase();
     setupAudio();
     refreshAlarms();
   }, []);
 
-  // ★ オーディオ設定（最新版 expo-audio 対応）
 const setupAudio = async () => {
     try {
       await setAudioModeAsync({
         playsInSilentModeIOS: true,
-        // InterruptionMode.DoNotMix の代わりに、直接設定を試みる
-        interruptionMode: 1, // 1 は通常 'DoNotMix' (他を止める) を指します
+        interruptionMode: 1,
         shouldRouteThroughEarpieceAndroid: false,
       });
       console.log("Audio mode set successfully");
     } catch (e) {
-      // もし数字でもエラーが出る場合は、最低限の設定だけで動かす
       try {
         await setAudioModeAsync({ playsInSilentModeIOS: true });
         console.log("Audio mode set with fallback");
@@ -69,14 +60,12 @@ const setupAudio = async () => {
     }
   };
   
-  // --- メインループ（1秒ごとの監視） ---
   useEffect(() => {
     const timer = setInterval(() => {
       const currentTime = new Date();
       setNow(currentTime);
       const timeStr = currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 
-      // アラーム検知
       if (timeStr !== lastFiredTime.current && currentPage === 'list') {
         const hitAlarm = alarms.find(a => a.time === timeStr);
         if (hitAlarm) {
@@ -85,7 +74,6 @@ const setupAudio = async () => {
         }
       }
 
-      // アラーム画面中のカウントダウン処理
       if (currentPage === 'alarm') {
         setCountdown((prev) => {
           if (prev <= 1) {
@@ -111,7 +99,6 @@ const setupAudio = async () => {
     setUserInput('');
   };
 
-  // --- アラーム起動 ---
   const triggerAlarm = (alarm) => {
     setActiveAlarm(alarm);
     setCountdown(20);
@@ -122,14 +109,12 @@ const setupAudio = async () => {
       alarmPlayer.play();
     }
 
-    // 激しい振動の開始
     hapticTimerRef.current = setInterval(() => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
     }, 600);
 
     setCurrentPage('alarm');
     
-    // 背景点滅とズームアニメーション開始
     Animated.loop(Animated.sequence([
       Animated.timing(flashAnim, { toValue: 1, duration: 80, useNativeDriver: false }),
       Animated.timing(flashAnim, { toValue: 0, duration: 80, useNativeDriver: false }),
@@ -140,7 +125,6 @@ const setupAudio = async () => {
     ])).start();
   };
 
-  // --- 解除判定ロジック (エラー回避・最速遷移版) ---
   const checkUnlock = async () => {
     const normalize = (text) => {
       if (!text) return "";
@@ -159,10 +143,10 @@ const setupAudio = async () => {
 
       try {
         if (hapticTimerRef.current) clearInterval(hapticTimerRef.current);
-        if (alarmPlayer) alarmPlayer.pause(); // 安全のためpauseを使用
+        if (alarmPlayer) alarmPlayer.pause();
       } catch (e) { console.log("Stop error:", e); }
 
-      setCurrentPage('list'); // 画面遷移を最優先
+      setCurrentPage('list');
 
       setTimeout(() => {
         if (activeAlarm && activeAlarm.is_recurring === 0) {
@@ -205,7 +189,6 @@ const setupAudio = async () => {
     outputRange: ['#FF0000', '#0000FF']
   });
 
-  // --- 各ページ描画 ---
   const renderListPage = () => (
     <View style={brightStyles.container}>
       <StatusBar barStyle="dark-content" />
@@ -305,7 +288,7 @@ const setupAudio = async () => {
   return renderListPage();
 }
 
-// --- スタイルシート ---
+//css部分
 const brightStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   mainClockHeader: { marginTop: 60, paddingHorizontal: 25, paddingBottom: 30, borderBottomWidth: 1, borderBottomColor: '#F2F2F7', alignItems: 'center' },
