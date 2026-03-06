@@ -1,2 +1,1 @@
-# wup
-個人開発用
+react native(Expo go)
